@@ -46,6 +46,16 @@
       border-top: 1px solid #ccc;
       padding: 0.25rem;
     }
+
+    #modalVideo {
+      border: none;
+      width: 100%;
+      height: 50vh;
+    }
+    
+    #fullscreenBtn {
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
@@ -141,6 +151,11 @@
         }
       }, 300);
     }, { once: true });
+
+    document.getElementById("fullscreenBtn").onclick = () => {
+    window.open(`https://drive.google.com/file/d/${flight.videoId}/view`, '_blank');
+  };
+
   }
 </script>
 
