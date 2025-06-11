@@ -108,34 +108,38 @@
   });
 
   function openModal(index) {
-    const flight = flights[index];
+  const flight = flights[index];
 
-    document.getElementById("modalTitle").textContent = flight.name;
-    document.getElementById("modalVideo").src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
+  document.getElementById("modalTitle").textContent = flight.name;
+  document.getElementById("modalVideo").src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
 
-    // Modal pertama kali? Inisialisasi map
-    if (!map) {
-      map = L.map("modalMap").setView([-6.2, 106.8], 15);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
-                  'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
-        maxZoom: 19
-      }).addTo(map);
-    }
-
-    // Hapus layer sebelumnya
-    if (currentKml) {
-      map.removeLayer(currentKml);
-    }
-
-    currentKml = omnivore.kml(flight.kml)
-      .on('ready', function () {
-        map.fitBounds(this.getBounds());
-      })
-      .addTo(map);
-
-    modal.show();
+  if (!map) {
+    map = L.map("modalMap").setView([-6.2, 106.8], 15);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
+                'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+      maxZoom: 19
+    }).addTo(map);
   }
+
+  if (currentKml) {
+    map.removeLayer(currentKml);
+  }
+
+  currentKml = omnivore.kml(flight.kml).addTo(map);
+
+  modal.show();
+
+  // Pastikan map update setelah modal tampil
+  document.getElementById("flightModal").addEventListener("shown.bs.modal", function () {
+    setTimeout(() => {
+      map.invalidateSize();
+      if (currentKml.getBounds) {
+        map.fitBounds(currentKml.getBounds());
+      }
+    }, 300);
+  }, { once: true });
+}
 </script>
 
 </body>
