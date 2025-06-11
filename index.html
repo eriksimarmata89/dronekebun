@@ -44,17 +44,9 @@
 
     .modal-footer {
       border-top: 1px solid #ccc;
-      padding: 0.25rem;
-    }
-
-    #modalVideo {
-      border: none;
-      width: 100%;
-      height: 50vh;
-    }
-    
-    #fullscreenBtn {
-      z-index: 10;
+      padding: 0.5rem;
+      justify-content: center;
+      gap: 0.5rem;
     }
   </style>
 </head>
@@ -66,7 +58,7 @@
     <thead>
       <tr>
         <th>Nama Lokasi</th>
-        <th>Aksi</th>
+        <th>Video</th>
       </tr>
     </thead>
     <tbody id="flightTableBody"></tbody>
@@ -81,16 +73,15 @@
         <iframe id="modalVideo" allow="autoplay" allowfullscreen></iframe>
         <div id="modalMap"></div>
       </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Kembali ke Daftar
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kembali ke Daftar</button>
+        <button type="button" class="btn btn-success d-none" id="fullscreenBtn" target="_blank">Lihat di Google Drive</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Bootstrap & Leaflet -->
+<!-- Script -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-omnivore/leaflet-omnivore.min.js"></script>
@@ -124,7 +115,7 @@
     },
     {
       name: "Divisi II Blok C0 - Perbatasan Kawasan Hutan",
-      videoId: "Jun-4th-2025-01-26PM-Flight-Airdata.kml",
+      videoId: "Jun-4th-2025-01-26PM-Flight-Airdata.kml", // Salah pasang videoId
       kml: ""
     },
   ];
@@ -144,8 +135,27 @@
 
   function openModal(index) {
     const flight = flights[index];
-    document.getElementById("modalVideo").src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
+    const videoFrame = document.getElementById("modalVideo");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
 
+    // Cek validitas video
+    const isVideoAvailable = flight.videoId && !flight.videoId.endsWith(".kml");
+
+    // Tampilkan video jika valid
+    if (isVideoAvailable) {
+      videoFrame.src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
+      videoFrame.style.display = "block";
+      fullscreenBtn.classList.remove("d-none");
+      fullscreenBtn.onclick = () => {
+        window.open(`https://drive.google.com/file/d/${flight.videoId}/view`, "_blank");
+      };
+    } else {
+      videoFrame.src = "";
+      videoFrame.style.display = "none";
+      fullscreenBtn.classList.add("d-none");
+    }
+
+    // Peta
     if (!map) {
       map = L.map("modalMap").setView([-6.2, 106.8], 15);
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
@@ -155,27 +165,27 @@
       }).addTo(map);
     }
 
+    // Hapus layer sebelumnya
     if (currentKml) {
       map.removeLayer(currentKml);
+      currentKml = null;
     }
 
-    currentKml = omnivore.kml(flight.kml).addTo(map);
+    // Tambah layer baru jika ada
+    if (flight.kml) {
+      currentKml = omnivore.kml(flight.kml).addTo(map);
+    }
 
     modal.show();
 
-    document.getElementById("flightModal").addEventListener("shown.bs.modal", function () {
+    document.getElementById("flightModal").addEventListener("shown.bs.modal", () => {
       setTimeout(() => {
         map.invalidateSize();
-        if (currentKml.getBounds) {
+        if (currentKml && currentKml.getBounds) {
           map.fitBounds(currentKml.getBounds());
         }
       }, 300);
     }, { once: true });
-
-    document.getElementById("fullscreenBtn").onclick = () => {
-    window.open(`https://drive.google.com/file/d/${flight.videoId}/view`, '_blank');
-  };
-
   }
 </script>
 
