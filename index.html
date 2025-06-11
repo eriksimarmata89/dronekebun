@@ -225,37 +225,46 @@
   let map, currentKml;
 
   function extractDivisi(name) {
-      const match = name.match(/Divisi [IVX]+(?: [A-Za-z]+)?/);
-      return match ? match[0] : "Lainnya";
-    }
+      const divMatch = name.match(/Divisi [IVX]+(?: [A-Za-z]+)?/);
+      if (divMatch) return divMatch[0];
     
-    let lastDivisi = "";
+      if (name.includes("Areal Nembok")) return "Areal Nembok";
+      if (name.includes("Kantor Kebun Cucut")) return "Kantor Kebun Cucut";
+    
+      return "Lainnya";
+    }
+
+    
     let rowspanMap = new Map();
-    let divisiList = flights.map(f => extractDivisi(f.name));
-    
-    // Hitung jumlah kemunculan berurutan (untuk rowspan)
-    for (let i = 0; i < divisiList.length; i++) {
-      const div = divisiList[i];
-      if (i === 0 || div !== divisiList[i - 1]) {
-        rowspanMap.set(div + "_" + i, 1);
-      } else {
-        const key = div + "_" + (i - rowspanMap.get(div + "_" + (i - 1)) || 1);
-        rowspanMap.set(key, (rowspanMap.get(key) || 1) + 1);
-        divisiList[i] = ""; // kosongkan agar tidak digandakan saat render
+      let divisiList = [];
+      let lastDivisi = "";
+      let rowIndexMap = new Map();
+      
+      for (let i = 0; i < flights.length; i++) {
+        const divisi = extractDivisi(flights[i].name);
+        divisiList.push(divisi);
+      
+        if (divisi !== lastDivisi) {
+          rowIndexMap.set(divisi, i); // index pertama muncul
+          rowspanMap.set(divisi, 1);
+          lastDivisi = divisi;
+        } else {
+          rowspanMap.set(divisi, rowspanMap.get(divisi) + 1);
+          divisiList[i] = ""; // tandai untuk tidak dirender ulang
+        }
       }
-    }
+
     
     for (let i = 0; i < flights.length; i++) {
       const flight = flights[i];
-      const divisiName = extractDivisi(flight.name);
-      const divisiKey = divisiName + "_" + i;
+      const divisi = extractDivisi(flight.name);
       const tr = document.createElement("tr");
     
-      // Kolom Divisi (dengan rowspan jika perlu)
+      // Kolom Divisi
       if (divisiList[i] !== "") {
         const tdDivisi = document.createElement("td");
-        tdDivisi.textContent = divisiName;
-        tdDivisi.rowSpan = rowspanMap.get(divisiKey) || 1;
+        tdDivisi.textContent = divisi;
+        tdDivisi.rowSpan = rowspanMap.get(divisi);
         tr.appendChild(tdDivisi);
       }
     
@@ -271,6 +280,7 @@
     
       tableBody.appendChild(tr);
     }
+
 
   function openModal(index) {
     const flight = flights[index];
