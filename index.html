@@ -2,28 +2,68 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Drone Video + Flight Path (Google Drive)</title>
+  <title>Drone Video + Flight Path (Responsive)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body { margin: 0; display: flex; height: 100vh; }
-    #video-container { width: 50%; }
-    iframe { width: 100%; height: 100%; border: none; }
-    #map { flex: 1; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+    }
+
+    #video-container, #map {
+      flex: 1;
+      height: 100%;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Responsif untuk layar kecil (HP) */
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      #video-container, #map {
+        height: 50vh;
+      }
+    }
   </style>
 </head>
 <body>
 
-<!-- Video dari Google Drive -->
-<div id="video-container">
-  <iframe
-    src="https://drive.google.com/file/d/YOUR_FILE_ID/preview"
-    allow="autoplay"
-  ></iframe>
-</div>
+<!-- Kontainer utama -->
+<div class="container">
 
-<!-- Peta Leaflet -->
-<div id="map"></div>
+  <!-- Video dari Google Drive -->
+  <div id="video-container">
+    <iframe
+      src="https://drive.google.com/file/d/YOUR_FILE_ID/preview"
+      allow="autoplay"
+    ></iframe>
+  </div>
+
+  <!-- Peta Leaflet -->
+  <div id="map"></div>
+
+</div>
 
 <!-- Script Leaflet -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -36,7 +76,7 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  omnivore.kml('Jun-4th-2025-10-56AM-Flight-Airdata.kml')
+  omnivore.kml('flight.kml')
     .on('ready', function () {
       map.fitBounds(this.getBounds());
     })
