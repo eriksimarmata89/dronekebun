@@ -1,1 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Drone Video + Flight Path</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body { margin: 0; display: flex; height: 100vh; }
+    #map { flex: 1; }
+    #video-container { width: 480px; background: #000; }
+    video { width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+
+<div id="video-container">
+  <video id="droneVideo" controls>
+    <source src="flight.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- leaflet-omnivore to load KML -->
+<script src="https://unpkg.com/leaflet-omnivore/leaflet-omnivore.min.js"></script>
+
+<script>
+  const map = L.map('map').setView([-6.2, 106.8], 15); // Awal: Jakarta
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Load KML Flight Path
+  let marker;
+  const kmlLayer = omnivore.kml('flight.kml')
+    .on('ready', function () {
+      map.fitBounds(kmlLayer.getBounds());
+
+      // Ambil koordinat jalur
+      const coords = [];
+      this.eachLayer(function(layer) {
+        if (layer instanceof L.Polyline) {
+          coords.push(...layer.getLatLngs());
+        }
+      });
+
+      // Buat marker awal di koordinat pertama
+      if (coords.length > 0) {
+        marker = L.circleMarker(coords[0], { radius: 6, color: 'red' }).addTo(map);
+      }
+
+      // Sinkronisasi marker dengan waktu video
+      const video = document.getElementById('droneVideo');
+      video.addEventListener('timeupdate', function () {
+        const duration = video.duration;
+        const currentTime = video.currentTime;
+
+        const progress = currentTime / duration;
+        const index = Math.floor(progress * (coords.length - 1));
+        if (marker && coords[index]) {
+          marker.setLatLng(coords[index]);
+        }
+      });
+    })
+    .addTo(map);
+</script>
+
+</body>
+</html>
 
