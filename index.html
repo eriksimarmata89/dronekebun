@@ -2,58 +2,32 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Drone Video + Satellite Map (Leaflet)</title>
+  <title>Drone Video Archive + Satellite Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    .container {
-      flex: 1;
-      display: flex;
-      flex-direction: row;
-    }
-
-    #video-container, #map {
-      flex: 1;
-      height: 100%;
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
+    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    .header { padding: 10px; background: #f0f0f0; }
+    .container { flex: 1; display: flex; flex-direction: row; }
+    #video-container, #map { flex: 1; height: 100%; }
+    iframe { width: 100%; height: 100%; border: none; }
     @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-      }
-      #video-container, #map {
-        height: 50vh;
-      }
+      .container { flex-direction: column; }
+      #video-container, #map { height: 50vh; }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Video Google Drive -->
-  <div id="video-container">
-    <iframe
-      src="https://drive.google.com/file/d/1hrvOlFHqEw8laEa83WxvpPXc7_mOGFNA/preview"
-      allow="autoplay"
-    ></iframe>
-  </div>
+<div class="header">
+  <label for="flightSelect">Pilih Flight:</label>
+  <select id="flightSelect"></select>
+</div>
 
-  <!-- Peta Satelit -->
+<div class="container">
+  <div id="video-container">
+    <iframe id="videoFrame" allow="autoplay"></iframe>
+  </div>
   <div id="map"></div>
 </div>
 
@@ -62,21 +36,58 @@
 <script src="https://unpkg.com/leaflet-omnivore/leaflet-omnivore.min.js"></script>
 
 <script>
-  const map = L.map('map').setView([-6.2, 106.8], 15);
+  const flights = [
+    {
+      name: "Flight A - 4 Juni",
+      videoId: "1hrvOlFHqEw8laEa83WxvpPXc7_mOGFNA",
+      kml: "Jun-4th-2025-10-56AM-Flight-Airdata.kml"
+    },
+    {
+      name: "Flight B - 5 Juni",
+      videoId: "1xYZabc456abcdeFGHIJKLMnoPQR",
+      kml: "Jun-5th-2025.kml"
+    }
+  ];
 
-  // Esri Satellite basemap
+  // Init map
+  const map = L.map('map').setView([-6.2, 106.8], 15);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
               'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution: '&copy; Esri, Maxar, Earthstar Geographics',
     maxZoom: 19
   }).addTo(map);
 
-  // Load KML flight path
-  omnivore.kml('Jun-4th-2025-10-56AM-Flight-Airdata.kml')
-    .on('ready', function () {
-      map.fitBounds(this.getBounds());
-    })
-    .addTo(map);
+  let currentKmlLayer = null;
+
+  // Populate dropdown
+  const select = document.getElementById("flightSelect");
+  flights.forEach((flight, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = flight.name;
+    select.appendChild(option);
+  });
+
+  function loadFlight(index) {
+    const flight = flights[index];
+    // Load video
+    const videoFrame = document.getElementById("videoFrame");
+    videoFrame.src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
+
+    // Load KML
+    if (currentKmlLayer) {
+      map.removeLayer(currentKmlLayer);
+    }
+    currentKmlLayer = omnivore.kml(flight.kml)
+      .on('ready', function () {
+        map.fitBounds(this.getBounds());
+      })
+      .addTo(map);
+  }
+
+  // Initial load
+  loadFlight(0);
+  select.addEventListener("change", e => loadFlight(e.target.value));
 </script>
 
 </body>
