@@ -135,56 +135,56 @@
   function openModal(index) {
     const flight = flights[index];
     const videoFrame = document.getElementById("modalVideo");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-
-    // Cek validitas video
+    const mapContainer = document.getElementById("modalMap");
+  
     const isVideoAvailable = flight.videoId && !flight.videoId.endsWith(".kml");
-
-    // Tampilkan video jika valid
+    const isKmlAvailable = flight.kml && flight.kml.trim() !== "";
+  
+    // Tampilkan video jika tersedia
     if (isVideoAvailable) {
       videoFrame.src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
       videoFrame.style.display = "block";
-      fullscreenBtn.classList.remove("d-none");
-      fullscreenBtn.onclick = () => {
-        window.open(`https://drive.google.com/file/d/${flight.videoId}/view`, "_blank");
-      };
     } else {
       videoFrame.src = "";
       videoFrame.style.display = "none";
-      fullscreenBtn.classList.add("d-none");
     }
-
-    // Peta
-    if (!map) {
-      map = L.map("modalMap").setView([-6.2, 106.8], 15);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
-                  'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '',
-        maxZoom: 19
-      }).addTo(map);
-    }
-
-    // Hapus layer sebelumnya
-    if (currentKml) {
-      map.removeLayer(currentKml);
-      currentKml = null;
-    }
-
-    // Tambah layer baru jika ada
-    if (flight.kml) {
+  
+    // Tampilkan/hilangkan peta dan atur tinggi video
+    if (isKmlAvailable) {
+      mapContainer.style.display = "block";
+      videoFrame.style.height = "50vh";
+  
+      if (!map) {
+        map = L.map("modalMap").setView([-6.2, 106.8], 15);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
+                    'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '',
+          maxZoom: 19
+        }).addTo(map);
+      }
+  
+      if (currentKml) {
+        map.removeLayer(currentKml);
+        currentKml = null;
+      }
+  
       currentKml = omnivore.kml(flight.kml).addTo(map);
+  
+      modal.show();
+      document.getElementById("flightModal").addEventListener("shown.bs.modal", () => {
+        setTimeout(() => {
+          map.invalidateSize();
+          if (currentKml && currentKml.getBounds) {
+            map.fitBounds(currentKml.getBounds());
+          }
+        }, 300);
+      }, { once: true });
+  
+    } else {
+      mapContainer.style.display = "none";
+      videoFrame.style.height = "100vh"; // Ubah tinggi video jadi penuh
+      modal.show();
     }
-
-    modal.show();
-
-    document.getElementById("flightModal").addEventListener("shown.bs.modal", () => {
-      setTimeout(() => {
-        map.invalidateSize();
-        if (currentKml && currentKml.getBounds) {
-          map.fitBounds(currentKml.getBounds());
-        }
-      }, 300);
-    }, { once: true });
   }
 </script>
 
