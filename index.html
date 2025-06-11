@@ -57,6 +57,7 @@
   <table class="table table-bordered">
     <thead>
       <tr>
+        <th>Divisi</th>
         <th>Nama Lokasi</th>
         <th>Video</th>
       </tr>
@@ -223,14 +224,53 @@
   const modal = new bootstrap.Modal(document.getElementById("flightModal"));
   let map, currentKml;
 
-  flights.forEach((flight, index) => {
-    const row = document.createElement("tr");
-    row.innerHTML = 
-      <td>${flight.name}</td>
-      <td><button class="btn btn-primary btn-sm" onclick="openModal(${index})">Lihat</button></td>
-    ;
-    tableBody.appendChild(row);
-  });
+  function extractDivisi(name) {
+      const match = name.match(/Divisi [IVX]+(?: [A-Za-z]+)?/);
+      return match ? match[0] : "Lainnya";
+    }
+    
+    let lastDivisi = "";
+    let rowspanMap = new Map();
+    let divisiList = flights.map(f => extractDivisi(f.name));
+    
+    // Hitung jumlah kemunculan berurutan (untuk rowspan)
+    for (let i = 0; i < divisiList.length; i++) {
+      const div = divisiList[i];
+      if (i === 0 || div !== divisiList[i - 1]) {
+        rowspanMap.set(div + "_" + i, 1);
+      } else {
+        const key = div + "_" + (i - rowspanMap.get(div + "_" + (i - 1)) || 1);
+        rowspanMap.set(key, (rowspanMap.get(key) || 1) + 1);
+        divisiList[i] = ""; // kosongkan agar tidak digandakan saat render
+      }
+    }
+    
+    for (let i = 0; i < flights.length; i++) {
+      const flight = flights[i];
+      const divisiName = extractDivisi(flight.name);
+      const divisiKey = divisiName + "_" + i;
+      const tr = document.createElement("tr");
+    
+      // Kolom Divisi (dengan rowspan jika perlu)
+      if (divisiList[i] !== "") {
+        const tdDivisi = document.createElement("td");
+        tdDivisi.textContent = divisiName;
+        tdDivisi.rowSpan = rowspanMap.get(divisiKey) || 1;
+        tr.appendChild(tdDivisi);
+      }
+    
+      // Kolom Nama Lokasi
+      const tdName = document.createElement("td");
+      tdName.textContent = flight.name;
+      tr.appendChild(tdName);
+    
+      // Kolom Tombol
+      const tdBtn = document.createElement("td");
+      tdBtn.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openModal(${i})">Lihat</button>`;
+      tr.appendChild(tdBtn);
+    
+      tableBody.appendChild(tr);
+    }
 
   function openModal(index) {
     const flight = flights[index];
