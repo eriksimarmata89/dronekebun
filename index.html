@@ -44,7 +44,7 @@
 
     .modal-footer {
       border-top: 1px solid #ccc;
-      padding: 0.75rem;
+      padding: 0.25rem;
     }
   </style>
 </head>
@@ -120,7 +120,7 @@
       map = L.map("modalMap").setView([-6.2, 106.8], 15);
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
                   'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+        attribution: '',
         maxZoom: 19
       }).addTo(map);
     }
