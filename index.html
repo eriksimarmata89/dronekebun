@@ -2,92 +2,115 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Drone Video Archive + Satellite Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drone Archive + Modal Peta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-    .header { padding: 10px; background: #f0f0f0; }
-    .container { flex: 1; display: flex; flex-direction: row; }
-    #video-container, #map { flex: 1; height: 100%; }
-    iframe { width: 100%; height: 100%; border: none; }
-    @media (max-width: 768px) {
-      .container { flex-direction: column; }
-      #video-container, #map { height: 50vh; }
+    #modalMap { height: 50vh; width: 100%; }
+    #modalVideo { width: 100%; height: 50vh; border: none; }
+    @media (min-width: 768px) {
+      #modalMap, #modalVideo { height: 100%; }
     }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <label for="flightSelect">Pilih Daerah:</label>
-  <select id="flightSelect"></select>
+<div class="container py-4">
+  <h3>Daftar Lokasi Penerbangan Drone</h3>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Nama Lokasi</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="flightTableBody"></tbody>
+  </table>
 </div>
 
-<div class="container">
-  <div id="video-container">
-    <iframe id="videoFrame" allow="autoplay"></iframe>
+<!-- Modal -->
+<div class="modal fade" id="flightModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-md-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Detail Lokasi</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body row g-0">
+        <div class="col-md-6">
+          <iframe id="modalVideo" allow="autoplay"></iframe>
+        </div>
+        <div class="col-md-6">
+          <div id="modalMap"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="map"></div>
 </div>
 
-<!-- Leaflet JS -->
+<!-- Bootstrap & Leaflet -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-omnivore/leaflet-omnivore.min.js"></script>
 
 <script>
   const flights = [
     {
-      name: "Flight A - 4 Juni",
+      name: "Lokasi 1",
       videoId: "1hrvOlFHqEw8laEa83WxvpPXc7_mOGFNA",
       kml: "Jun-4th-2025-10-56AM-Flight-Airdata.kml"
     },
     {
-      name: "Flight B - 5 Juni",
+      name: "Lokasi 2",
       videoId: "1xYZabc456abcdeFGHIJKLMnoPQR",
       kml: "Jun-5th-2025.kml"
     }
   ];
 
-  // Init map
-  const map = L.map('map').setView([-6.2, 106.8], 15);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
-              'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Erik Simarmata',
-    maxZoom: 19
-  }).addTo(map);
+  const tableBody = document.getElementById("flightTableBody");
+  const modal = new bootstrap.Modal(document.getElementById("flightModal"));
+  let map, currentKml;
 
-  let currentKmlLayer = null;
-
-  // Populate dropdown
-  const select = document.getElementById("flightSelect");
+  // Buat baris tabel dari data
   flights.forEach((flight, index) => {
-    const option = document.createElement("option");
-    option.value = index;
-    option.textContent = flight.name;
-    select.appendChild(option);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${flight.name}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="openModal(${index})">Lihat</button></td>
+    `;
+    tableBody.appendChild(row);
   });
 
-  function loadFlight(index) {
+  function openModal(index) {
     const flight = flights[index];
-    // Load video
-    const videoFrame = document.getElementById("videoFrame");
-    videoFrame.src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
 
-    // Load KML
-    if (currentKmlLayer) {
-      map.removeLayer(currentKmlLayer);
+    document.getElementById("modalTitle").textContent = flight.name;
+    document.getElementById("modalVideo").src = `https://drive.google.com/file/d/${flight.videoId}/preview`;
+
+    // Modal pertama kali? Inisialisasi map
+    if (!map) {
+      map = L.map("modalMap").setView([-6.2, 106.8], 15);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
+                  'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19
+      }).addTo(map);
     }
-    currentKmlLayer = omnivore.kml(flight.kml)
+
+    // Hapus layer sebelumnya
+    if (currentKml) {
+      map.removeLayer(currentKml);
+    }
+
+    currentKml = omnivore.kml(flight.kml)
       .on('ready', function () {
         map.fitBounds(this.getBounds());
       })
       .addTo(map);
-  }
 
-  // Initial load
-  loadFlight(0);
-  select.addEventListener("change", e => loadFlight(e.target.value));
+    modal.show();
+  }
 </script>
 
 </body>
